@@ -1,0 +1,53 @@
+name: Publish plugin
+
+on:
+    push:
+        tags:
+            - "v*"
+
+env:
+    PLUGIN_NAME: logseq-ai-chat-assistant
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build plugin
+              run: npm run build
+
+            - name: Prepare package directory
+              run: |
+                  mkdir -p "$PLUGIN_NAME"
+                  cp -R dist/* "$PLUGIN_NAME"/
+                  cp package.json manifest.json README.md "$PLUGIN_NAME"/
+                  if [ -f icon.svg ]; then cp icon.svg "$PLUGIN_NAME"/; fi
+                  if [ -f demo.gif ]; then cp demo.gif "$PLUGIN_NAME"/; fi
+
+            - name: Create release archives
+              run: |
+                  zip -r "$PLUGIN_NAME.zip" "$PLUGIN_NAME"
+                  tar -czf "$PLUGIN_NAME.tar.gz" "$PLUGIN_NAME"
+
+            - name: Create GitHub release
+              id: create_release
+              uses: ncipollo/release-action@v1
+              with:
+                  allowUpdates: true
+                  artifacts: "${{ env.PLUGIN_NAME }}.zip,${{ env.PLUGIN_NAME }}.tar.gz"
+                  draft: false
+                  prerelease: false
+                  generateReleaseNotes: true

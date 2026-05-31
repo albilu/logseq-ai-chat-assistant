@@ -6,7 +6,8 @@
   "main": "dist/index.html",
   "logseq": {
     "id": "logseq-ai-chat-assistant",
-    "title": "Logseq AI Chat Assistant"
+    "title": "Logseq AI Chat Assistant",
+    "icon": "./icon.svg"
   },
   "scripts": {
     "dev": "vite",
