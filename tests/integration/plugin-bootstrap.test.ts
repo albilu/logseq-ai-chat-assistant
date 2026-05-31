@@ -30,6 +30,8 @@ function createMockLogseqRuntime(options: MockLogseqRuntimeOptions = {}) {
   return {
     settings: options.settings ?? {},
     useSettingsSchema: vi.fn(),
+    onSettingsChanged: vi.fn(),
+    updateSettings: vi.fn(),
     Editor: {
       getCurrentBlock: vi.fn().mockResolvedValue({ uuid: "block-1", content: "Focused block" }),
       createPage: vi.fn().mockResolvedValue({ uuid: "page-1" }),

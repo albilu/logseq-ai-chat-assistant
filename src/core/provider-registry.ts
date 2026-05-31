@@ -50,6 +50,64 @@ export async function probeProvider(provider: ProviderConfig) {
   }
 }
 
+export async function fetchProviderModels(provider: ProviderConfig): Promise<string[]> {
+  const url = provider.type === "openai"
+    ? `${provider.baseUrl}/models`
+    : `${provider.baseUrl}/api/tags`;
+
+  console.debug(`[logseq-ai-chat-assistant] fetchProviderModels: GET ${url}`, {
+    providerName: provider.name,
+    providerType: provider.type,
+    hasApiKey: !!provider.apiKey
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, PROBE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      headers: provider.apiKey ? { Authorization: `Bearer ${provider.apiKey}` } : undefined,
+      signal: controller.signal
+    });
+
+    console.debug(`[logseq-ai-chat-assistant] fetchProviderModels: response ${response.status} ${response.statusText}`, {
+      providerName: provider.name,
+      ok: response.ok
+    });
+
+    if (!response.ok) {
+      throw new Error(`${response.status} ${response.statusText}`.trim());
+    }
+
+    const data = await response.json() as any;
+    console.debug(`[logseq-ai-chat-assistant] fetchProviderModels: raw response data`, {
+      providerName: provider.name,
+      dataKeys: Object.keys(data),
+      dataArrayKey: provider.type === "openai" ? `data (${Array.isArray(data.data) ? data.data.length : "not array"})` : `models (${Array.isArray(data.models) ? data.models.length : "not array"})`
+    });
+
+    let modelIds: string[];
+    if (provider.type === "openai") {
+      modelIds = Array.isArray(data.data) ? data.data.map((m: any) => String(m.id)) : [];
+    } else {
+      modelIds = Array.isArray(data.models) ? data.models.map((m: any) => String(m.name)) : [];
+    }
+
+    console.debug(`[logseq-ai-chat-assistant] fetchProviderModels: parsed ${modelIds.length} model ID(s)`, modelIds);
+    return modelIds;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Fetch models timed out");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export function getModelOrThrow(settings: PluginSettings, modelName: string) {
   const model = settings.models.find((candidate) => candidate.name === modelName);
 

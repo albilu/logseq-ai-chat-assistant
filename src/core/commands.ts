@@ -104,11 +104,18 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
       return;
     }
 
+    // Resolve the actual model name - if it's the special marker, read current defaultModel from settings
+    let actualModelName = modelName;
+    if (modelName === "__DEFAULT_MODEL__") {
+      const currentSettings = await runtime.settings;
+      actualModelName = String(currentSettings?.defaultModel ?? settings.defaultModel);
+    }
+
     let model;
     let provider;
 
     try {
-      model = getModelOrThrow(settings, modelName);
+      model = getModelOrThrow(settings, actualModelName);
       provider = getProviderForModel(settings, model);
     } catch (error) {
       logseqService.showMessage(getErrorMessage(error), "warning");
@@ -169,18 +176,18 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
     runtime.Editor.registerSlashCommand(registeredSlashCommandName, async () => runCommand("ask", model.name, "last-exchange"));
   }
 
-  runtime.Editor.registerSlashCommand("ask-ai", async () => runCommand("ask", settings.defaultModel, "last-exchange"));
-  runtime.Editor.registerSlashCommand("ask-with-ai-history", async () => runCommand("ask", settings.defaultModel, "ai-history"));
-  runtime.Editor.registerSlashCommand("ask-with-full-page-context", async () => runCommand("ask", settings.defaultModel, "full-page"));
-  runtime.Editor.registerSlashCommand("ai-summarize", async () => runCommand("summarize", settings.defaultModel, "last-exchange"));
+  runtime.Editor.registerSlashCommand("ask-ai", async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
+  runtime.Editor.registerSlashCommand("ask-with-ai-history", async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
+  runtime.Editor.registerSlashCommand("ask-with-full-page-context", async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
+  runtime.Editor.registerSlashCommand("ai-summarize", async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
 
-  runtime.Editor.registerBlockContextMenuItem("Ask AI", async () => runCommand("ask", settings.defaultModel, "last-exchange"));
-  runtime.Editor.registerBlockContextMenuItem("Ask With AI History", async () => runCommand("ask", settings.defaultModel, "ai-history"));
-  runtime.Editor.registerBlockContextMenuItem("Ask With Full Page Context", async () => runCommand("ask", settings.defaultModel, "full-page"));
-  runtime.Editor.registerBlockContextMenuItem("AI Summarize", async () => runCommand("summarize", settings.defaultModel, "last-exchange"));
+  runtime.Editor.registerBlockContextMenuItem("Ask AI", async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
+  runtime.Editor.registerBlockContextMenuItem("Ask With AI History", async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
+  runtime.Editor.registerBlockContextMenuItem("Ask With Full Page Context", async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
+  runtime.Editor.registerBlockContextMenuItem("AI Summarize", async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
 
-  registerShortcutIfPresent(settings.shortcutBinding, async () => runCommand("ask", settings.defaultModel, "last-exchange"));
-  registerShortcutIfPresent(settings.askWithHistoryShortcutBinding, async () => runCommand("ask", settings.defaultModel, "ai-history"));
-  registerShortcutIfPresent(settings.askWithFullPageContextShortcutBinding, async () => runCommand("ask", settings.defaultModel, "full-page"));
-  registerShortcutIfPresent(settings.aiSummarizeShortcutBinding, async () => runCommand("summarize", settings.defaultModel, "last-exchange"));
+  registerShortcutIfPresent(settings.shortcutBinding, async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
+  registerShortcutIfPresent(settings.askWithHistoryShortcutBinding, async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
+  registerShortcutIfPresent(settings.askWithFullPageContextShortcutBinding, async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
+  registerShortcutIfPresent(settings.aiSummarizeShortcutBinding, async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
 }

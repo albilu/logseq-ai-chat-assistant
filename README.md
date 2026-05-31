@@ -8,8 +8,8 @@
 - Multi models configuration
 - Easy integration with Logseq
     - Shortcut/Slash/Block context actions
-        - Ask AI
-        - Summarize
+        - Ask AI, Ask with History, Ask with full page context
+        - AI Summarize
         - /ask-{{model}}
     - Stream responses in real-time with (thinking, typing)
 - Page Conversation history with
@@ -32,6 +32,6 @@ Configure providers and models in the Logseq plugin settings, then use:
 - `Ask AI`
 - `Summarize`
 - `/ask-<model>`
-- `Mod+Shift+A`
+- `Mod+Shift+Enter`
 
 Selected text is used first. If nothing is selected, the focused block content is used.

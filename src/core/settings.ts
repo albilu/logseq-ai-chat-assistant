@@ -1,23 +1,38 @@
-import type { PluginSettings } from "./types";
+import type { ModelConfig, PluginSettings } from "./types";
 
-type SettingsSchema = Parameters<typeof logseq.useSettingsSchema>[0];
+export type SettingsSchema = Parameters<typeof logseq.useSettingsSchema>[0];
 
-export const settingsSchema: SettingsSchema = [
-  { key: "providers", type: "string", default: "[]", title: "Providers JSON", description: "JSON array of provider configs" },
-  { key: "models", type: "string", default: "[]", title: "Models JSON", description: "JSON array of model configs" },
-  { key: "defaultModel", type: "string", default: "", title: "Default model", description: "Name of the default model to run" },
-  { key: "shortcutBinding", type: "string", default: "ctrl+shift+enter", title: "Shortcut binding", description: "Keyboard shortcut for Ask AI" },
-  {
-    key: "prependAssistantLabel",
-    type: "boolean",
-    default: true,
-    title: "Prepend [assistant] label to assistant replies",
-    description: "Controls only assistant reply prefixes such as [assistant]. This does not change [error] block formatting."
-  },
-  { key: "askWithHistoryShortcutBinding", type: "string", default: "", title: "Ask with history shortcut binding", description: "Optional keyboard shortcut for Ask with AI history" },
-  { key: "askWithFullPageContextShortcutBinding", type: "string", default: "", title: "Ask with full page context shortcut binding", description: "Optional keyboard shortcut for Ask with full page context" },
-  { key: "aiSummarizeShortcutBinding", type: "string", default: "", title: "AI summarize shortcut binding", description: "Optional keyboard shortcut for AI Summarize" }
-];
+export function getSettingsSchema(models: ModelConfig[]): SettingsSchema {
+  const modelNames = models.map((m) => m.name);
+  const uniqueNames = Array.from(new Set(modelNames));
+  if (uniqueNames.length === 0) {
+    uniqueNames.push("");
+  }
+
+  return [
+    { key: "providers", type: "string", default: "[]", title: "Providers JSON", description: "JSON array of provider configs" },
+    { key: "models", type: "string", default: "[]", title: "Models JSON", description: "JSON array of model configs" },
+    { 
+      key: "defaultModel", 
+      type: "enum", 
+      enumChoices: uniqueNames, 
+      default: uniqueNames[0] || "", 
+      title: "Default model", 
+      description: "Name of the default model to run" 
+    },
+    { key: "shortcutBinding", type: "string", default: "ctrl+shift+enter", title: "Shortcut binding", description: "Keyboard shortcut for Ask AI" },
+    {
+      key: "prependAssistantLabel",
+      type: "boolean",
+      default: true,
+      title: "Prepend [assistant] label to assistant replies",
+      description: "Controls only assistant reply prefixes such as [assistant]. This does not change [error] block formatting."
+    },
+    { key: "askWithHistoryShortcutBinding", type: "string", default: "", title: "Ask with history shortcut binding", description: "Optional keyboard shortcut for Ask with AI history" },
+    { key: "askWithFullPageContextShortcutBinding", type: "string", default: "", title: "Ask with full page context shortcut binding", description: "Optional keyboard shortcut for Ask with full page context" },
+    { key: "aiSummarizeShortcutBinding", type: "string", default: "", title: "AI summarize shortcut binding", description: "Optional keyboard shortcut for AI Summarize" }
+  ];
+}
 
 export const defaultSettings: PluginSettings = {
   providers: [],
