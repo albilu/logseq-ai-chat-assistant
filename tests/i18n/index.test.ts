@@ -86,6 +86,11 @@ describe("initLocale()", () => {
     expect(t("blocks.user")).not.toBe("[user]");
   });
 
+  it("resolves German locale for 'de' prefix", async () => {
+    await initLocale(makeRuntime("de"));
+    expect(t("blocks.user")).not.toBe("[user]");
+  });
+
   it("resolves French for 'fr-FR' tag", async () => {
     await initLocale(makeRuntime("fr-FR"));
     expect(t("ui.contextMenuAskAi")).not.toBe("Ask AI");
