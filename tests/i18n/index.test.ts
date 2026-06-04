@@ -80,6 +80,16 @@ describe("initLocale()", () => {
     await initLocale({ App: {} } as never);
     expect(t("blocks.user")).toBe("[user]");
   });
+
+  it("resolves French locale for 'fr' prefix", async () => {
+    await initLocale(makeRuntime("fr"));
+    expect(t("blocks.user")).not.toBe("[user]");
+  });
+
+  it("resolves French for 'fr-FR' tag", async () => {
+    await initLocale(makeRuntime("fr-FR"));
+    expect(t("ui.contextMenuAskAi")).not.toBe("Ask AI");
+  });
 });
 
 describe("resolveLocaleFromPreferredLanguage()", () => {
