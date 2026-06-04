@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getAllTranslationsOf, initLocale, t } from "../../src/i18n/index";
+import {
+  getAllTranslationsOf,
+  initLocale,
+  resolveLocaleFromPreferredLanguage,
+  t,
+} from "../../src/i18n/index";
 
 function makeRuntime(preferredLanguage: string) {
   return {
@@ -74,6 +79,19 @@ describe("initLocale()", () => {
   it("falls back to English when getUserConfigs is not a function", async () => {
     await initLocale({ App: {} } as never);
     expect(t("blocks.user")).toBe("[user]");
+  });
+});
+
+describe("resolveLocaleFromPreferredLanguage()", () => {
+  it("maps supported BCP-47 prefixes to their locales", () => {
+    expect(resolveLocaleFromPreferredLanguage("fr-CA")).toBe("fr");
+    expect(resolveLocaleFromPreferredLanguage("de-AT")).toBe("de");
+    expect(resolveLocaleFromPreferredLanguage("nl-BE")).toBe("nl");
+    expect(resolveLocaleFromPreferredLanguage("zh-TW")).toBe("zh");
+  });
+
+  it("falls back to English for unsupported prefixes", () => {
+    expect(resolveLocaleFromPreferredLanguage("ja-JP")).toBe("en");
   });
 });
 

@@ -49,6 +49,11 @@ function interpolate(template: string, vars?: Record<string, string>): string {
 
 export type { TranslationKey };
 
+export function resolveLocaleFromPreferredLanguage(preferredLanguage?: string): SupportedLocale {
+  const prefix = (preferredLanguage ?? "").split("-")[0].toLowerCase();
+  return LOCALE_MAP[prefix] ?? "en";
+}
+
 export async function initLocale(runtime: {
   App: { getUserConfigs?(): Promise<{ preferredLanguage: string }> };
 }): Promise<void> {
@@ -59,8 +64,7 @@ export async function initLocale(runtime: {
     }
 
     const { preferredLanguage } = await runtime.App.getUserConfigs();
-    const prefix = (preferredLanguage ?? "").split("-")[0].toLowerCase();
-    const locale = LOCALE_MAP[prefix] ?? "en";
+    const locale = resolveLocaleFromPreferredLanguage(preferredLanguage);
     activeTranslations = TRANSLATIONS[locale];
   } catch {
     activeTranslations = en;
