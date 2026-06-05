@@ -17,6 +17,10 @@ export const zh: Translations = {
     contextMenuAskWithHistory: "带历史记录提问 AI",
     contextMenuAskWithFullPage: "带完整页面提问 AI",
     contextMenuSummarize: "AI 摘要",
+    slashAskAi: "提问AI",
+    slashAskWithHistory: "带历史提问AI",
+    slashAskWithFullPage: "带页面提问AI",
+    slashSummarize: "AI摘要",
   },
   settings: {
     providersJsonTitle: "提供商 JSON",

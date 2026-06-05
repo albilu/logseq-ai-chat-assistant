@@ -1,7 +1,7 @@
 import "@logseq/libs";
 
 import { registerCommands } from "./core/commands";
-import { fetchProviderModels, probeProvider } from "./core/provider-registry";
+import { fetchProviderModels } from "./core/provider-registry";
 import { parseSettings, getSettingsSchema, validateSettings } from "./core/settings";
 import type { ModelConfig } from "./core/types";
 import { initLocale, t } from "./i18n/index";
@@ -35,17 +35,9 @@ export async function main(runtime: typeof logseq = logseq) {
     shortcutBinding: settings.shortcutBinding
   });
 
-  for (const provider of settings.providers) {
-    try {
-      await probeProvider(provider);
-    } catch (error) {
-      appRuntime.App.showMsg(t("ui.providerUnreachable", { name: provider.name, error: getErrorMessage(error) }), "warning");
-    }
-  }
-
   // Fetch available models from all configured providers, merging with any
   // existing manually-configured models. Returns the merged list, or undefined
-  // if no providers are configured.
+  // if no providers are configured. Fetches all providers in parallel.
   async function syncModels(runtime: RuntimeWithShowMsg): Promise<ModelConfig[] | undefined> {
     const currentSettings = parseSettings(runtime.settings ?? {});
     console.debug("[logseq-ai-chat-assistant] syncModels start", {
@@ -63,31 +55,40 @@ export async function main(runtime: typeof logseq = logseq) {
     const existingModels = new Map(currentSettings.models.map(m => [`${m.providerId}:${m.modelId}`, m]));
     const newModels: ModelConfig[] = [];
 
-    for (const provider of currentSettings.providers) {
-      const url = provider.type === "openai"
-        ? `${provider.baseUrl}/models`
-        : `${provider.baseUrl}/api/tags`;
-      console.debug(`[logseq-ai-chat-assistant] syncModels: fetching from provider "${provider.name}"`, { url });
-      try {
-        const modelIds = await fetchProviderModels(provider);
-        console.debug(`[logseq-ai-chat-assistant] syncModels: provider "${provider.name}" returned ${modelIds.length} model(s)`, modelIds);
-        for (const modelId of modelIds) {
-          const key = `${provider.name}:${modelId}`;
-          if (existingModels.has(key)) {
-            console.debug(`[logseq-ai-chat-assistant] syncModels: keeping existing model for key "${key}"`);
-            newModels.push(existingModels.get(key)!);
-          } else {
-            console.debug(`[logseq-ai-chat-assistant] syncModels: adding new model for key "${key}"`);
-            newModels.push({
-              name: `${provider.name} ${modelId}`,
-              providerId: provider.name,
-              modelId: modelId,
-              systemPrompt: t("prompts.defaultSystemPrompt")
-            });
-          }
+    // Fetch all providers in parallel for faster startup
+    const providerResults = await Promise.all(
+      currentSettings.providers.map(async (provider) => {
+        const url = provider.type === "openai"
+          ? `${provider.baseUrl}/models`
+          : `${provider.baseUrl}/api/tags`;
+        console.debug(`[logseq-ai-chat-assistant] syncModels: fetching from provider "${provider.name}"`, { url });
+        try {
+          const modelIds = await fetchProviderModels(provider);
+          console.debug(`[logseq-ai-chat-assistant] syncModels: provider "${provider.name}" returned ${modelIds.length} model(s)`, modelIds);
+          return { provider, modelIds };
+        } catch (error) {
+          console.warn(`[logseq-ai-chat-assistant] syncModels: failed to fetch models for provider "${provider.name}"`, error);
+          runtime.App.showMsg(t("ui.providerUnreachable", { name: provider.name, error: getErrorMessage(error) }), "warning");
+          return { provider, modelIds: [] as string[] };
         }
-      } catch (error) {
-        console.warn(`[logseq-ai-chat-assistant] syncModels: failed to fetch models for provider "${provider.name}"`, error);
+      })
+    );
+
+    for (const { provider, modelIds } of providerResults) {
+      for (const modelId of modelIds) {
+        const key = `${provider.name}:${modelId}`;
+        if (existingModels.has(key)) {
+          console.debug(`[logseq-ai-chat-assistant] syncModels: keeping existing model for key "${key}"`);
+          newModels.push(existingModels.get(key)!);
+        } else {
+          console.debug(`[logseq-ai-chat-assistant] syncModels: adding new model for key "${key}"`);
+          newModels.push({
+            name: `${provider.name} ${modelId}`,
+            providerId: provider.name,
+            modelId: modelId,
+            systemPrompt: t("prompts.defaultSystemPrompt")
+          });
+        }
       }
     }
 
@@ -116,26 +117,21 @@ export async function main(runtime: typeof logseq = logseq) {
     return newModels;
   }
 
-  // Fetch and persist models BEFORE calling useSettingsSchema so the
-  // defaultModel enum dropdown is pre-populated when the settings panel opens.
-  console.debug("[logseq-ai-chat-assistant] starting model sync");
-  const syncedModels = await syncModels(appRuntime);
-  const finalModels = syncedModels ?? settings.models;
+  // Register settings schema immediately with cached models so the UI is
+  // responsive right away. Background model sync will update it later.
   console.info("[logseq-ai-chat-assistant] registering settings schema", {
-    modelCount: finalModels.length,
-    modelNames: finalModels.map(m => m.name)
+    modelCount: settings.models.length,
+    modelNames: settings.models.map(m => m.name)
   });
-  appRuntime.useSettingsSchema(getSettingsSchema(finalModels));
+  appRuntime.useSettingsSchema(getSettingsSchema(settings.models));
 
-  const finalSettings = { ...settings, models: finalModels };
-
-  const validation = validateSettings(finalSettings);
+  const validation = validateSettings(settings);
   if (validation.issues.length > 0) {
     console.warn("[logseq-ai-chat-assistant] settings validation issues", {
       issues: validation.issues,
-      providerNames: finalSettings.providers.map((provider) => provider.name),
-      modelNames: finalSettings.models.map((model) => model.name),
-      defaultModel: finalSettings.defaultModel
+      providerNames: settings.providers.map((provider) => provider.name),
+      modelNames: settings.models.map((model) => model.name),
+      defaultModel: settings.defaultModel
     });
   }
   for (const issue of validation.issues) {
@@ -162,7 +158,24 @@ export async function main(runtime: typeof logseq = logseq) {
     }
   });
 
-  await registerCommands(appRuntime, finalSettings);
+  await registerCommands(appRuntime, settings);
+
+  // Sync models in background - don't block the Logseq handshake.
+  // Provider reachability is checked here instead of a separate probe step.
+  console.debug("[logseq-ai-chat-assistant] starting background model sync");
+  syncModels(appRuntime)
+    .then(syncedModels => {
+      if (syncedModels) {
+        console.info("[logseq-ai-chat-assistant] background sync complete, updating schema", {
+          modelCount: syncedModels.length,
+          modelNames: syncedModels.map(m => m.name)
+        });
+        appRuntime.useSettingsSchema(getSettingsSchema(syncedModels));
+      }
+    })
+    .catch(error => {
+      console.warn("[logseq-ai-chat-assistant] background model sync failed", error);
+    });
 }
 
 if (typeof globalThis.logseq !== "undefined" && typeof globalThis.logseq.ready === "function") {

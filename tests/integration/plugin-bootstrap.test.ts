@@ -16,12 +16,12 @@ const validSettings = {
   aiSummarizeShortcutBinding: "ctrl+shift+s"
 };
 
-async function mockProviderRegistryWithSuccessfulProbe() {
+async function mockProviderRegistryWithSuccessfulFetch() {
   vi.doMock("../../src/core/provider-registry", async () => {
     const actual = await vi.importActual<typeof import("../../src/core/provider-registry")>("../../src/core/provider-registry");
     return {
       ...actual,
-      probeProvider: vi.fn().mockResolvedValue(undefined)
+      fetchProviderModels: vi.fn().mockResolvedValue([])
     };
   });
 }
@@ -68,8 +68,11 @@ describe("plugin bootstrap", () => {
     vi.resetModules();
     vi.clearAllMocks();
     vi.doUnmock("../../src/services/logseq-service");
-    vi.doUnmock("../../src/core/provider-registry");
     vi.doUnmock("../../src/core/chat-flow");
+    // Mock fetchProviderModels by default so background model sync doesn't
+    // attempt real network calls. Tests that need specific fetch behavior
+    // call vi.resetModules() and set up their own mock.
+    mockProviderRegistryWithSuccessfulFetch();
   });
 
   it("wires a bootstrap callback into Logseq startup", async () => {
@@ -142,7 +145,7 @@ describe("plugin bootstrap", () => {
 
   it("constructs LogseqService with prependAssistantLabel from settings", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
 
     const LogseqServiceMock = vi.fn().mockImplementation(() => createMockLogseqService());
 
@@ -210,7 +213,7 @@ describe("plugin bootstrap", () => {
   });
 
   it("keeps model-specific slash commands available with a deterministic alternate name when they collide with built-ins", async () => {
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
 
     const runtime = createMockLogseqRuntime({
       settings: {
@@ -232,7 +235,7 @@ describe("plugin bootstrap", () => {
   });
 
   it("warns and skips later duplicate shortcut bindings", async () => {
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
 
     const runtime = createMockLogseqRuntime({
       settings: {
@@ -254,7 +257,7 @@ describe("plugin bootstrap", () => {
   });
 
   it("keeps later duplicate model-derived slash command names available with deterministic alternate names", async () => {
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
 
     const runtime = createMockLogseqRuntime({
       settings: {
@@ -312,7 +315,7 @@ describe("plugin bootstrap", () => {
 
   it("uses selected text when Ask AI runs", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, {
       getPromptSource: vi.fn().mockResolvedValue({ text: "Selected note text", replyTargetBlockUuid: "block-1" }),
@@ -344,7 +347,7 @@ describe("plugin bootstrap", () => {
 
   it("falls back to top-level user turn creation when selected text has no source block", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, {
       getPromptSource: vi.fn().mockResolvedValue({ text: "Selected note text", replyTargetBlockUuid: null }),
@@ -371,7 +374,7 @@ describe("plugin bootstrap", () => {
 
   it("passes the same resolved page into context loading and output writing", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const resolvedPage = { uuid: "owner-page", name: "Owner Page" };
     const logseqService = createMockLogseqService(undefined, {
@@ -400,7 +403,7 @@ describe("plugin bootstrap", () => {
 
   it("still prefers selected text for AI Summarize", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, {
       getPromptSource: vi.fn().mockResolvedValue({ text: "Selected note text", replyTargetBlockUuid: "block-1" }),
@@ -433,7 +436,7 @@ describe("plugin bootstrap", () => {
 
   it("routes Ask With AI History through ai-history mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -458,7 +461,7 @@ describe("plugin bootstrap", () => {
 
   it("routes Ask With Full Page Context through full-page mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -483,7 +486,7 @@ describe("plugin bootstrap", () => {
 
   it("routes Ask AI through last-exchange mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -509,7 +512,7 @@ describe("plugin bootstrap", () => {
 
   it("routes slash commands through last-exchange mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -533,7 +536,7 @@ describe("plugin bootstrap", () => {
 
   it("routes /ask-ai through last-exchange mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -557,7 +560,7 @@ describe("plugin bootstrap", () => {
 
   it("routes /ask-with-ai-history through ai-history mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -582,7 +585,7 @@ describe("plugin bootstrap", () => {
 
   it("routes /ask-with-full-page-context through full-page mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -607,7 +610,7 @@ describe("plugin bootstrap", () => {
 
   it("routes /ai-summarize through summarize mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -632,7 +635,7 @@ describe("plugin bootstrap", () => {
 
   it("routes the keyboard shortcut through last-exchange mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -656,7 +659,7 @@ describe("plugin bootstrap", () => {
 
   it("routes the ask-with-history keyboard shortcut through ai-history mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -681,7 +684,7 @@ describe("plugin bootstrap", () => {
 
   it("routes the ask-with-full-page-context keyboard shortcut through full-page mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -706,7 +709,7 @@ describe("plugin bootstrap", () => {
 
   it("routes the ai-summarize keyboard shortcut through summarize mode", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const logseqService = createMockLogseqService(undefined, { showMessage: vi.fn() });
     vi.doMock("../../src/services/logseq-service", () => ({
@@ -730,7 +733,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when there is no prompt source", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
 
     const runtime = createMockLogseqRuntime({
@@ -757,7 +760,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when the default model is invalid", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
@@ -801,7 +804,7 @@ describe("plugin bootstrap", () => {
 
   it("still surfaces invalid provider errors before page resolution warnings", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
 
     const runtime = createMockLogseqRuntime({
@@ -836,7 +839,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when selected text exists but no focused block page can be resolved", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const runtime = createMockLogseqRuntime({ settings: validSettings });
     const logseqService = createMockLogseqService(runtime, {
@@ -863,7 +866,7 @@ describe("plugin bootstrap", () => {
 
   it("falls back to the current page when selected text exists without a focused block", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     const runChatFlow = vi.fn();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow }));
     vi.doUnmock("../../src/services/logseq-service");
@@ -897,7 +900,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when selected text has a focused block but its owner page cannot be resolved", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     const runChatFlow = vi.fn();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow }));
     vi.doUnmock("../../src/services/logseq-service");
@@ -933,7 +936,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when source-reply placement fails before insertion", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     const runChatFlow = vi.fn().mockRejectedValue(new Error("Source block not found"));
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow }));
     const runtime = createMockLogseqRuntime({ settings: validSettings });
@@ -956,7 +959,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when the current page cannot be resolved for summarize", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const runtime = createMockLogseqRuntime({ settings: validSettings });
     const logseqService = createMockLogseqService(runtime, {
@@ -986,7 +989,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when resolving the current page rejects", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
     const runtime = createMockLogseqRuntime({ settings: validSettings });
     const logseqService = createMockLogseqService(runtime, {
@@ -1015,7 +1018,7 @@ describe("plugin bootstrap", () => {
 
   it("warns and aborts when last-exchange context loading rejects", async () => {
     vi.resetModules();
-    await mockProviderRegistryWithSuccessfulProbe();
+    await mockProviderRegistryWithSuccessfulFetch();
     vi.doMock("../../src/core/chat-flow", () => ({ runChatFlow: vi.fn() }));
 
     const runtime = createMockLogseqRuntime({ settings: validSettings });
@@ -1044,7 +1047,7 @@ describe("plugin bootstrap", () => {
       const actual = await vi.importActual<typeof import("../../src/core/provider-registry")>("../../src/core/provider-registry");
       return {
         ...actual,
-        probeProvider: vi.fn().mockRejectedValue(new Error("401 Unauthorized"))
+        fetchProviderModels: vi.fn().mockRejectedValue(new Error("401 Unauthorized"))
       };
     });
 
@@ -1055,18 +1058,21 @@ describe("plugin bootstrap", () => {
     const { main } = await import("../../src/main");
     await main(runtime as any);
 
-    expect(runtime.App.showMsg).toHaveBeenCalledWith('Provider "cloud" is unreachable: 401 Unauthorized', "warning");
+    // Wait for background model sync to surface the warning
+    await vi.waitFor(() => {
+      expect(runtime.App.showMsg).toHaveBeenCalledWith('Provider "cloud" is unreachable: 401 Unauthorized', "warning");
+    });
   });
 
-  it("still registers commands when a provider probe times out", async () => {
+  it("still registers commands when a provider model fetch times out", async () => {
     vi.useFakeTimers();
     vi.resetModules();
     vi.doMock("../../src/core/provider-registry", async () => {
       const actual = await vi.importActual<typeof import("../../src/core/provider-registry")>("../../src/core/provider-registry");
       return {
         ...actual,
-        probeProvider: vi.fn(() => new Promise((_resolve, reject) => {
-          setTimeout(() => reject(new Error("Probe timed out")), 5000);
+        fetchProviderModels: vi.fn(() => new Promise((_resolve, reject) => {
+          setTimeout(() => reject(new Error("Fetch models timed out")), 5000);
         }))
       };
     });
@@ -1076,14 +1082,16 @@ describe("plugin bootstrap", () => {
     });
 
     const { main } = await import("../../src/main");
-    const startupPromise = main(runtime as any);
+    await main(runtime as any);
 
-    await vi.advanceTimersByTimeAsync(5000);
-    await startupPromise;
-
-    expect(runtime.App.showMsg).toHaveBeenCalledWith('Provider "cloud" is unreachable: Probe timed out', "warning");
+    // Commands should be registered immediately without waiting for background sync
     expect(runtime.Editor.registerSlashCommand).toHaveBeenCalledWith("ask-chat-model", expect.any(Function));
     expect(runtime.Editor.registerBlockContextMenuItem).toHaveBeenCalledWith("Ask AI", expect.any(Function));
+
+    // Let the background fetch timeout expire
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(runtime.App.showMsg).toHaveBeenCalledWith('Provider "cloud" is unreachable: Fetch models timed out', "warning");
 
     vi.useRealTimers();
   });

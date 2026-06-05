@@ -36,10 +36,10 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
     prependAssistantLabel: settings.prependAssistantLabel
   });
   const builtInSlashCommands = new Set([
-    "ask-ai",
-    "ask-with-ai-history",
-    "ask-with-full-page-context",
-    "ai-summarize"
+    t("ui.slashAskAi"),
+    t("ui.slashAskWithHistory"),
+    t("ui.slashAskWithFullPage"),
+    t("ui.slashSummarize")
   ]);
   const registeredSlashCommandNames = new Set(builtInSlashCommands);
   const registeredShortcutBindings = new Set<string>();
@@ -177,10 +177,10 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
     runtime.Editor.registerSlashCommand(registeredSlashCommandName, async () => runCommand("ask", model.name, "last-exchange"));
   }
 
-  runtime.Editor.registerSlashCommand("ask-ai", async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
-  runtime.Editor.registerSlashCommand("ask-with-ai-history", async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
-  runtime.Editor.registerSlashCommand("ask-with-full-page-context", async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
-  runtime.Editor.registerSlashCommand("ai-summarize", async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
+  runtime.Editor.registerSlashCommand(t("ui.slashAskAi"), async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
+  runtime.Editor.registerSlashCommand(t("ui.slashAskWithHistory"), async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
+  runtime.Editor.registerSlashCommand(t("ui.slashAskWithFullPage"), async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
+  runtime.Editor.registerSlashCommand(t("ui.slashSummarize"), async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
 
   runtime.Editor.registerBlockContextMenuItem(t("ui.contextMenuAskAi"), async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
   runtime.Editor.registerBlockContextMenuItem(t("ui.contextMenuAskWithHistory"), async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));

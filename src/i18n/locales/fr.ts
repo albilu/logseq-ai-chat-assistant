@@ -17,6 +17,10 @@ export const fr: Translations = {
     contextMenuAskWithHistory: "Demander à l'IA avec historique",
     contextMenuAskWithFullPage: "Demander à l'IA avec page complète",
     contextMenuSummarize: "Résumer avec l'IA",
+    slashAskAi: "demander-ia",
+    slashAskWithHistory: "demander-ia-historique",
+    slashAskWithFullPage: "demander-ia-page-complete",
+    slashSummarize: "resume-ia",
   },
   settings: {
     providersJsonTitle: "JSON des fournisseurs",

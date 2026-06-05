@@ -17,6 +17,10 @@ export const en: Translations = {
     contextMenuAskWithHistory: "Ask With AI History",
     contextMenuAskWithFullPage: "Ask With Full Page Context",
     contextMenuSummarize: "AI Summarize",
+    slashAskAi: "ask-ai",
+    slashAskWithHistory: "ask-with-ai-history",
+    slashAskWithFullPage: "ask-with-full-page-context",
+    slashSummarize: "ai-summarize",
   },
   settings: {
     providersJsonTitle: "Providers JSON",

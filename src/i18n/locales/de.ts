@@ -17,6 +17,10 @@ export const de: Translations = {
     contextMenuAskWithHistory: "KI mit Verlauf fragen",
     contextMenuAskWithFullPage: "KI mit vollständiger Seite fragen",
     contextMenuSummarize: "KI-Zusammenfassung",
+    slashAskAi: "ki-fragen",
+    slashAskWithHistory: "ki-fragen-verlauf",
+    slashAskWithFullPage: "ki-fragen-ganze-seite",
+    slashSummarize: "ki-zusammenfassung",
   },
   settings: {
     providersJsonTitle: "Anbieter-JSON",

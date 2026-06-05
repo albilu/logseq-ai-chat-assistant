@@ -12,6 +12,10 @@ export interface Translations {
     contextMenuAskWithHistory: string;
     contextMenuAskWithFullPage: string;
     contextMenuSummarize: string;
+    slashAskAi: string;
+    slashAskWithHistory: string;
+    slashAskWithFullPage: string;
+    slashSummarize: string;
   };
   settings: {
     providersJsonTitle: string;

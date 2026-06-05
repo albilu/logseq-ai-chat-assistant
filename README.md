@@ -51,6 +51,95 @@ A powerful Logseq plugin that brings AI chat capabilities directly into your kno
 3. Select your default model
 4. Customize keyboard shortcuts (optional)
 
+### Provider Configuration
+
+Providers are configured as a JSON array in the plugin settings under **Providers JSON**.
+
+#### OpenAI (or any OpenAI-compatible API)
+
+```json
+[
+  {
+    "name": "openai",
+    "type": "openai",
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "sk-..."
+  }
+]
+```
+
+#### Ollama (local models)
+
+```json
+[
+  {
+    "name": "local-ollama",
+    "type": "ollama",
+    "baseUrl": "http://127.0.0.1:11434"
+  }
+]
+```
+
+#### Multiple providers
+
+You can configure several providers at once:
+
+```json
+[
+  {
+    "name": "openai",
+    "type": "openai",
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "sk-..."
+  },
+  {
+    "name": "local-ollama",
+    "type": "ollama",
+    "baseUrl": "http://127.0.0.1:11434"
+  },
+  {
+    "name": "lm-studio",
+    "type": "openai",
+    "baseUrl": "http://localhost:1234/v1"
+  }
+]
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Unique identifier for the provider (referenced by models) |
+| `type` | Yes | `"openai"` or `"ollama"` |
+| `baseUrl` | Yes | API base URL |
+| `apiKey` | No | API key (required for OpenAI, not used by Ollama) |
+
+### Model Configuration
+
+Models are configured as a JSON array in the **Models JSON** field. Each model references a provider by its `name`.
+
+```json
+[
+  {
+    "name": "GPT-4o",
+    "providerId": "openai",
+    "modelId": "gpt-4o",
+    "systemPrompt": "You are a helpful assistant."
+  },
+  {
+    "name": "Llama 3",
+    "providerId": "local-ollama",
+    "modelId": "llama3",
+    "systemPrompt": "You are a helpful assistant."
+  }
+]
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Display name (also used for per-model slash commands: `/ask-gpt-4o`) |
+| `providerId` | Yes | Must match a provider's `name` |
+| `modelId` | Yes | Model identifier sent to the provider API |
+| `systemPrompt` | Yes | System prompt prepended to every conversation |
+
 ## Usage
 
 ### Quick Start
