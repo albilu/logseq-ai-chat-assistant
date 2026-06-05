@@ -17,12 +17,14 @@ export default defineConfig({
         // Copy icon
         copyFileSync("icon.svg", "dist/icon.svg");
 
-        // Copy package.json with only necessary fields
+        // Copy package.json with only necessary fields.
+        // Use "index.html" as main (not "dist/index.html") because the
+        // release CI flattens dist/* into the plugin root directory.
         const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
         const distPkg = {
           name: pkg.name,
           version: pkg.version,
-          main: pkg.main,
+          main: "index.html",
           logseq: pkg.logseq
         };
         writeFileSync("dist/package.json", JSON.stringify(distPkg, null, 2));

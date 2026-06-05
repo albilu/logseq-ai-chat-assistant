@@ -33,7 +33,7 @@ jobs:
               run: |
                   mkdir -p "$PLUGIN_NAME"
                   cp -R dist/* "$PLUGIN_NAME"/
-                  cp package.json manifest.json README.md "$PLUGIN_NAME"/
+                  cp manifest.json README.md "$PLUGIN_NAME"/
                   if [ -f icon.svg ]; then cp icon.svg "$PLUGIN_NAME"/; fi
                   if [ -f demo.gif ]; then cp demo.gif "$PLUGIN_NAME"/; fi
 
