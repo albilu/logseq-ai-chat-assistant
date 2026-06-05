@@ -1,3 +1,4 @@
+import { t } from "../i18n/index";
 import { runChatFlow } from "./chat-flow";
 import { createLLMProvider, getModelOrThrow, getProviderForModel } from "./provider-registry";
 import { toSlashCommandName } from "./settings";
@@ -51,7 +52,7 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
     }
 
     if (registeredShortcutBindings.has(trimmedBinding)) {
-      logseqService.showMessage(`Skipping shortcut binding "${trimmedBinding}" because it is already registered.`, "warning");
+      logseqService.showMessage(t("ui.skippingShortcut", { binding: trimmedBinding }), "warning");
       return;
     }
 
@@ -100,7 +101,7 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
     const { text: promptSourceText, replyTargetBlockUuid } = await logseqService.getPromptSource();
 
     if (!promptSourceText) {
-      logseqService.showMessage("Select text or focus a block first.", "warning");
+      logseqService.showMessage(t("ui.selectTextOrBlock"), "warning");
       return;
     }
 
@@ -132,7 +133,7 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
     }
 
     if (!targetPage) {
-      logseqService.showMessage("Unable to resolve the current page for AI output.", "warning");
+      logseqService.showMessage(t("ui.unableToResolvePage"), "warning");
       return;
     }
 
@@ -166,7 +167,7 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
 
     if (registeredSlashCommandName !== slashCommandName) {
       logseqService.showMessage(
-        `Registering model slash command "${registeredSlashCommandName}" for "${model.name}" because "${slashCommandName}" is already in use.`,
+        t("ui.registeringModelSlashCommand", { registered: registeredSlashCommandName, name: model.name, original: slashCommandName }),
         "warning"
       );
     }
@@ -181,10 +182,10 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
   runtime.Editor.registerSlashCommand("ask-with-full-page-context", async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
   runtime.Editor.registerSlashCommand("ai-summarize", async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
 
-  runtime.Editor.registerBlockContextMenuItem("Ask AI", async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
-  runtime.Editor.registerBlockContextMenuItem("Ask With AI History", async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
-  runtime.Editor.registerBlockContextMenuItem("Ask With Full Page Context", async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
-  runtime.Editor.registerBlockContextMenuItem("AI Summarize", async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
+  runtime.Editor.registerBlockContextMenuItem(t("ui.contextMenuAskAi"), async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
+  runtime.Editor.registerBlockContextMenuItem(t("ui.contextMenuAskWithHistory"), async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
+  runtime.Editor.registerBlockContextMenuItem(t("ui.contextMenuAskWithFullPage"), async () => runCommand("ask", "__DEFAULT_MODEL__", "full-page"));
+  runtime.Editor.registerBlockContextMenuItem(t("ui.contextMenuSummarize"), async () => runCommand("summarize", "__DEFAULT_MODEL__", "last-exchange"));
 
   registerShortcutIfPresent(settings.shortcutBinding, async () => runCommand("ask", "__DEFAULT_MODEL__", "last-exchange"));
   registerShortcutIfPresent(settings.askWithHistoryShortcutBinding, async () => runCommand("ask", "__DEFAULT_MODEL__", "ai-history"));
