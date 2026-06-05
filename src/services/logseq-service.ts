@@ -1,8 +1,6 @@
-import { STREAMING_MARKER } from "../ui/streaming-indicator";
-
-const ASSISTANT_PLACEHOLDER_TEXT = STREAMING_MARKER === "[typing...]"
-  ? "⌨️ typing..."
-  : STREAMING_MARKER;
+import { getStreamingMarkerText } from "../ui/streaming-indicator";
+import { t, getAllTranslationsOf } from "../i18n/index";
+import type { TranslationKey } from "../i18n/index";
 
 type BlockEntity = {
   uuid: string;
@@ -61,7 +59,8 @@ function pad(value: number) {
 }
 
 function formatConversationTitle(date: Date) {
-  return `AI Chat - ${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+  const dateStr = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+  return t("blocks.chatPageTitle", { date: dateStr });
 }
 
 export class LogseqService {
@@ -136,16 +135,16 @@ export class LogseqService {
     const resolvedPage = page ?? await this.resolveCurrentPage();
 
     if (!resolvedPage) {
-      throw new Error("Unable to resolve the current page for AI output.");
+      throw new Error(t("ui.unableToResolvePage"));
     }
 
-    const userBlock = await this.api.Editor.insertBlock(resolvedPage.uuid, `[user] ${prompt}`, {
+    const userBlock = await this.api.Editor.insertBlock(resolvedPage.uuid, `${t("blocks.user")} ${prompt}`, {
       sibling: false,
       before: false
     });
 
     if (!userBlock) {
-      throw new Error("Unable to create the user turn block.");
+      throw new Error(t("ui.unableToCreateUserBlock"));
     }
 
     return {
@@ -164,7 +163,7 @@ export class LogseqService {
     const blocks = await this.getResolvedPageBlocksTree(resolvedPage);
 
     return blocks.flatMap((block) => {
-      const user = stripRolePrefix(block.content, "user");
+      const user = stripRolePrefix(block.content, "blocks.user");
 
       if (user === null) {
         return [];
@@ -209,28 +208,28 @@ export class LogseqService {
   }
 
   async createAssistantPlaceholder(parentUuid: string) {
-    return this.appendChildBlock(parentUuid, this.formatAssistantContent(ASSISTANT_PLACEHOLDER_TEXT));
+    return this.appendChildBlock(parentUuid, this.formatAssistantContent(getStreamingMarkerText()));
   }
 
   async replaceBlockContent(blockUuid: string, content: string, role: "user" | "assistant" = "assistant") {
     const formattedContent = role === "assistant"
       ? this.formatAssistantContent(content)
-      : `[${role}] ${content}`;
+      : `${t("blocks.user")} ${content}`;
 
     await this.api.Editor.updateBlock(blockUuid, formattedContent);
   }
 
   async finalizeBlock(blockUuid: string, content: string) {
-    const finalContent = content.trim() ? content : "[no response]";
+    const finalContent = content.trim() ? content : t("blocks.noResponse");
     await this.replaceBlockContent(blockUuid, finalContent, "assistant");
   }
 
   async appendErrorBlock(parentUuid: string, error: string, hint: string) {
-    return this.api.Editor.insertBlock(parentUuid, `[error] ${error}\n${hint}`, { sibling: false, before: false });
+    return this.api.Editor.insertBlock(parentUuid, `${t("blocks.error")} ${error}\n${hint}`, { sibling: false, before: false });
   }
 
   async markInterrupted(blockUuid: string, content: string) {
-    await this.replaceBlockContent(blockUuid, `${content} [interrupted]`, "assistant");
+    await this.replaceBlockContent(blockUuid, `${content} ${t("blocks.interrupted")}`, "assistant");
   }
 
   showMessage(message: string, level: "success" | "warning" | "error" = "warning") {
@@ -245,7 +244,7 @@ export class LogseqService {
     const currentPage = await this.api.Editor.getCurrentPage();
 
     if (currentPage?.uuid !== page.uuid) {
-      throw new Error("Unable to read blocks for non-current page without getPageBlocksTree support.");
+      throw new Error(t("ui.unableToReadBlocksNonCurrentPage"));
     }
 
     return this.api.Editor.getCurrentPageBlocksTree(page.uuid);
@@ -256,7 +255,7 @@ export class LogseqService {
       return content;
     }
 
-    return `[assistant] ${content}`;
+    return `${t("blocks.assistant")} ${content}`;
   }
 
   private isPropertyBlock(content: string | undefined) {
@@ -265,7 +264,7 @@ export class LogseqService {
 
   private extractAssistantChildContent(children: BlockTreeNode[]) {
     const legacyAssistantContent = children
-      .map((child) => stripRolePrefix(child.content, "assistant"))
+      .map((child) => stripRolePrefix(child.content, "blocks.assistant"))
       .find((value): value is string => value !== null);
 
     if (legacyAssistantContent !== undefined) {
@@ -290,7 +289,9 @@ export class LogseqService {
       return false;
     }
 
-    return !trimmedContent.startsWith("[error]")
+    const errorLabels = getAllTranslationsOf("blocks.error");
+
+    return !errorLabels.some((label) => trimmedContent.startsWith(label))
       && !this.isPropertyBlock(content);
   }
 }
@@ -298,14 +299,18 @@ export class LogseqService {
 export { formatConversationTitle };
 export type { ResolvedPage };
 
-function stripRolePrefix(content: string | undefined, role: "user" | "assistant") {
-  const prefix = `[${role}] `;
+function stripRolePrefix(content: string | undefined, labelKey: Extract<TranslationKey, "blocks.user" | "blocks.assistant">) {
+  const labels = getAllTranslationsOf(labelKey);
 
-  if (!content?.startsWith(prefix)) {
-    return null;
+  for (const label of labels) {
+    const prefix = `${label} `;
+
+    if (content?.startsWith(prefix)) {
+      return content.slice(prefix.length);
+    }
   }
 
-  return content.slice(prefix.length);
+  return null;
 }
 
 function serializeBlockTree(blocks: BlockTreeNode[], depth = 0): string {

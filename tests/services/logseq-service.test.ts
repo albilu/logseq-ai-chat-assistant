@@ -645,4 +645,21 @@ describe("LogseqService", () => {
 
     await expect(service.resolveCurrentPage()).resolves.toEqual({ uuid: "page-1", name: "Current Page" });
   });
+
+  it("recognises English [user]/[assistant] labels when locale is French", async () => {
+    const { initLocale } = await import("../../src/i18n/index");
+    await initLocale({ App: { getUserConfigs: async () => ({ preferredLanguage: "fr" }) } });
+
+    mockLogseq.Editor.getCurrentPage.mockResolvedValue({ uuid: "page-uuid", name: "Notes" });
+    mockLogseq.Editor.getPageBlocksTree.mockResolvedValue([
+      { content: "[user] English prompt", children: [{ content: "[assistant] English reply" }] }
+    ]);
+
+    const service = new LogseqService(mockLogseq as never);
+    await expect(service.getPriorAiTurns()).resolves.toEqual([
+      { user: "English prompt", assistant: "English reply" }
+    ]);
+
+    await initLocale({ App: { getUserConfigs: async () => ({ preferredLanguage: "en" }) } });
+  });
 });
