@@ -1,4 +1,5 @@
 import type { ModelConfig, PluginSettings } from "./types";
+import { t } from "../i18n/index";
 
 export type SettingsSchema = Parameters<typeof logseq.useSettingsSchema>[0];
 
@@ -10,27 +11,27 @@ export function getSettingsSchema(models: ModelConfig[]): SettingsSchema {
   }
 
   return [
-    { key: "providers", type: "string", default: "[]", title: "Providers JSON", description: "JSON array of provider configs" },
-    { key: "models", type: "string", default: "[]", title: "Models JSON", description: "JSON array of model configs" },
+    { key: "providers", type: "string", default: "[]", title: t("settings.providersJsonTitle"), description: t("settings.providersJsonDesc") },
+    { key: "models", type: "string", default: "[]", title: t("settings.modelsJsonTitle"), description: t("settings.modelsJsonDesc") },
     { 
       key: "defaultModel", 
       type: "enum", 
       enumChoices: uniqueNames, 
       default: uniqueNames[0] || "", 
-      title: "Default model", 
-      description: "Name of the default model to run" 
+      title: t("settings.defaultModelTitle"), 
+      description: t("settings.defaultModelDesc") 
     },
-    { key: "shortcutBinding", type: "string", default: "ctrl+shift+enter", title: "Shortcut binding", description: "Keyboard shortcut for Ask AI" },
+    { key: "shortcutBinding", type: "string", default: "ctrl+shift+enter", title: t("settings.shortcutBindingTitle"), description: t("settings.shortcutBindingDesc") },
     {
       key: "prependAssistantLabel",
       type: "boolean",
       default: true,
-      title: "Prepend [assistant] label to assistant replies",
-      description: "Controls only assistant reply prefixes such as [assistant]. This does not change [error] block formatting."
+      title: t("settings.prependAssistantLabelTitle"),
+      description: t("settings.prependAssistantLabelDesc")
     },
-    { key: "askWithHistoryShortcutBinding", type: "string", default: "", title: "Ask with history shortcut binding", description: "Optional keyboard shortcut for Ask with AI history" },
-    { key: "askWithFullPageContextShortcutBinding", type: "string", default: "", title: "Ask with full page context shortcut binding", description: "Optional keyboard shortcut for Ask with full page context" },
-    { key: "aiSummarizeShortcutBinding", type: "string", default: "", title: "AI summarize shortcut binding", description: "Optional keyboard shortcut for AI Summarize" }
+    { key: "askWithHistoryShortcutBinding", type: "string", default: "", title: t("settings.askWithHistoryShortcutTitle"), description: t("settings.askWithHistoryShortcutDesc") },
+    { key: "askWithFullPageContextShortcutBinding", type: "string", default: "", title: t("settings.askWithFullPageShortcutTitle"), description: t("settings.askWithFullPageShortcutDesc") },
+    { key: "aiSummarizeShortcutBinding", type: "string", default: "", title: t("settings.aiSummarizeShortcutTitle"), description: t("settings.aiSummarizeShortcutDesc") }
   ];
 }
 
@@ -113,16 +114,16 @@ export function validateSettings(settings: PluginSettings) {
 
   for (const model of settings.models) {
     if (!providerNames.has(model.providerId)) {
-      issues.push(`Model "${model.name}" references missing provider "${model.providerId}"`);
+      issues.push(t("settings.modelMissingProvider", { model: model.name, provider: model.providerId }));
     }
   }
 
   if (settings.defaultModel && !modelNames.has(settings.defaultModel)) {
-    issues.push(`Default model "${settings.defaultModel}" is not configured`);
+    issues.push(t("settings.defaultModelNotConfigured", { model: settings.defaultModel }));
   }
 
   if (!settings.shortcutBinding.trim()) {
-    issues.push("Shortcut binding must not be empty");
+    issues.push(t("settings.shortcutMustNotBeEmpty"));
   }
 
   return { isValid: issues.length === 0, issues };
