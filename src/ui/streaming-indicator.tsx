@@ -1,19 +1,18 @@
-export const STREAMING_MARKER_TEXT = "⌨️ typing...";
+// src/ui/streaming-indicator.tsx
+import { t } from "../i18n/index";
 
-export const STREAMING_MARKER_FRAMES = [
-  "⌨️ typing...",
-  "⌨️ typing.. ",
-  "⌨️ typing.  "
-];
-
-export function shouldReduceStreamingMotion() {
-  return typeof window !== "undefined"
-    && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+export function getStreamingMarkerText(): string {
+  return t("streaming.frame0");
 }
 
-export const STREAMING_MARKER = STREAMING_MARKER_TEXT;
+export function getStreamingMarkerFrames(): string[] {
+  return [t("streaming.frame0"), t("streaming.frame1"), t("streaming.frame2")];
+}
 
-export function StreamingIndicator() {
-  return STREAMING_MARKER_TEXT;
+export function shouldReduceStreamingMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 }
