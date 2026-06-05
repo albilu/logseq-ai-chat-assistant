@@ -4,6 +4,7 @@ interface OpenAIProviderConfig {
   baseUrl: string;
   apiKey: string;
   modelId: string;
+  fetchImpl?: typeof fetch;
 }
 
 async function* readSseLines(response: Response) {
@@ -58,7 +59,7 @@ export class OpenAIProvider implements LLMProvider {
       headers.Authorization = `Bearer ${this.config.apiKey}`;
     }
 
-    const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+    const response = await (this.config.fetchImpl ?? fetch)(`${this.config.baseUrl}/chat/completions`, {
       method: "POST",
       headers,
       body: JSON.stringify({ model: this.config.modelId, messages, stream: true })

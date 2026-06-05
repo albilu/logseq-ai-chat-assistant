@@ -1,6 +1,7 @@
 import "@logseq/libs";
 
 import { registerCommands } from "./core/commands";
+import { createLogseqFetch } from "./core/logseq-fetch";
 import { fetchProviderModels } from "./core/provider-registry";
 import { parseSettings, getSettingsSchema, validateSettings } from "./core/settings";
 import type { ModelConfig } from "./core/types";
@@ -23,6 +24,13 @@ type RuntimeWithShowMsg = typeof logseq & {
 
 export async function main(runtime: typeof logseq = logseq) {
   const appRuntime = runtime as RuntimeWithShowMsg;
+
+  // Create an IPC-bridged fetch that bypasses browser CORS restrictions.
+  // Logseq plugins run inside a lsp://logseq.io iframe; native fetch to
+  // localhost origins (Ollama, local OpenAI-compatible servers) is blocked
+  // by CORS.  The IPC bridge routes requests through the Electron main
+  // process which has no such restriction.
+  const logseqFetch = createLogseqFetch(runtime as never);
 
   // Do NOT await initLocale here — getUserConfigs() is an IPC call that
   // deadlocks the Logseq handshake because the host won't process IPC
@@ -68,7 +76,7 @@ export async function main(runtime: typeof logseq = logseq) {
           : `${provider.baseUrl}/api/tags`;
         console.debug(`[logseq-ai-chat-assistant] syncModels: fetching from provider "${provider.name}"`, { url });
         try {
-          const modelIds = await fetchProviderModels(provider);
+          const modelIds = await fetchProviderModels(provider, logseqFetch);
           console.debug(`[logseq-ai-chat-assistant] syncModels: provider "${provider.name}" returned ${modelIds.length} model(s)`, modelIds);
           return { provider, modelIds };
         } catch (error) {
@@ -180,7 +188,7 @@ export async function main(runtime: typeof logseq = logseq) {
     }
   });
 
-  await registerCommands(appRuntime, settings);
+  await registerCommands(appRuntime, settings, logseqFetch);
 
   // Background work — none of this blocks the Logseq handshake.
 

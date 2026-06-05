@@ -3,6 +3,7 @@ import type { ChatMessage, LLMProvider } from "./interface";
 interface OllamaProviderConfig {
   baseUrl: string;
   modelId: string;
+  fetchImpl?: typeof fetch;
 }
 
 async function* readNdjsonLines(response: Response) {
@@ -43,7 +44,8 @@ export class OllamaProvider implements LLMProvider {
   constructor(private readonly config: OllamaProviderConfig) {}
 
   async streamChat(messages: ChatMessage[], onChunk: (chunk: string) => void | Promise<void>) {
-    const response = await fetch(`${this.config.baseUrl}/api/chat`, {
+    const fetchFn = this.config.fetchImpl ?? fetch;
+    const response = await fetchFn(`${this.config.baseUrl}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: this.config.modelId, messages, stream: true })

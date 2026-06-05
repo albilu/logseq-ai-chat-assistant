@@ -31,7 +31,7 @@ function resolveAvailableSlashCommandName(baseName: string, registeredNames: Set
   return candidate;
 }
 
-export async function registerCommands(runtime: typeof logseq, settings: PluginSettings) {
+export async function registerCommands(runtime: typeof logseq, settings: PluginSettings, fetchImpl?: typeof fetch) {
   const logseqService = new LogseqService(runtime as never, {
     prependAssistantLabel: settings.prependAssistantLabel
   });
@@ -153,7 +153,7 @@ export async function registerCommands(runtime: typeof logseq, settings: PluginS
         priorTurns: contextPayload.priorTurns,
         fullPageContext: contextPayload.fullPageContext,
         model,
-        llmProvider: createLLMProvider(provider, model),
+        llmProvider: createLLMProvider(provider, model, fetchImpl),
         logseqService
       });
     } catch (error) {

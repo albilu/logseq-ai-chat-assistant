@@ -5,22 +5,24 @@ import { OpenAIProvider } from "../providers/llm/openai";
 
 const PROBE_TIMEOUT_MS = 5000;
 
-export function createLLMProvider(provider: ProviderConfig, model: ModelConfig): LLMProvider {
+export function createLLMProvider(provider: ProviderConfig, model: ModelConfig, fetchImpl?: typeof fetch): LLMProvider {
   if (provider.type === "openai") {
     return new OpenAIProvider({
       baseUrl: provider.baseUrl,
       apiKey: provider.apiKey ?? "",
-      modelId: model.modelId
+      modelId: model.modelId,
+      fetchImpl
     });
   }
 
   return new OllamaProvider({
     baseUrl: provider.baseUrl,
-    modelId: model.modelId
+    modelId: model.modelId,
+    fetchImpl
   });
 }
 
-export async function probeProvider(provider: ProviderConfig) {
+export async function probeProvider(provider: ProviderConfig, fetchImpl: typeof fetch = fetch) {
   const url = provider.type === "openai"
     ? `${provider.baseUrl}/models`
     : `${provider.baseUrl}/api/tags`;
@@ -31,7 +33,7 @@ export async function probeProvider(provider: ProviderConfig) {
   }, PROBE_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
       headers: provider.apiKey ? { Authorization: `Bearer ${provider.apiKey}` } : undefined,
       signal: controller.signal
     });
@@ -50,7 +52,7 @@ export async function probeProvider(provider: ProviderConfig) {
   }
 }
 
-export async function fetchProviderModels(provider: ProviderConfig): Promise<string[]> {
+export async function fetchProviderModels(provider: ProviderConfig, fetchImpl: typeof fetch = fetch): Promise<string[]> {
   const url = provider.type === "openai"
     ? `${provider.baseUrl}/models`
     : `${provider.baseUrl}/api/tags`;
@@ -67,7 +69,7 @@ export async function fetchProviderModels(provider: ProviderConfig): Promise<str
   }, PROBE_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
       headers: provider.apiKey ? { Authorization: `Bearer ${provider.apiKey}` } : undefined,
       signal: controller.signal
     });
