@@ -2,6 +2,7 @@ import { en } from "./locales/en";
 import { fr } from "./locales/fr";
 import { de } from "./locales/de";
 import { nl } from "./locales/nl";
+import { zh } from "./locales/zh";
 import type { TranslationKey, Translations } from "./types";
 
 type SupportedLocale = "en" | "fr" | "de" | "nl" | "zh";
@@ -11,7 +12,7 @@ const TRANSLATIONS: Record<SupportedLocale, Translations> = {
   fr,
   de,
   nl,
-  zh: en,
+  zh,
 };
 
 const LOCALE_MAP: Record<string, SupportedLocale> = {

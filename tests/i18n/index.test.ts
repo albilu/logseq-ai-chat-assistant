@@ -100,6 +100,16 @@ describe("initLocale()", () => {
     await initLocale(makeRuntime("fr-FR"));
     expect(t("ui.contextMenuAskAi")).not.toBe("Ask AI");
   });
+
+  it("resolves Chinese for 'zh-CN' tag", async () => {
+    await initLocale(makeRuntime("zh-CN"));
+    expect(t("blocks.user")).not.toBe("[user]");
+  });
+
+  it("resolves Chinese for 'zh-TW' tag (maps to Simplified Chinese locale)", async () => {
+    await initLocale(makeRuntime("zh-TW"));
+    expect(t("blocks.user")).not.toBe("[user]");
+  });
 });
 
 describe("resolveLocaleFromPreferredLanguage()", () => {
@@ -124,5 +134,10 @@ describe("getAllTranslationsOf()", () => {
   it("returns unique values only", () => {
     const values = getAllTranslationsOf("blocks.user");
     expect(values.length).toBe(new Set(values).size);
+  });
+
+  it("returns values from all five locales once all are registered", () => {
+    const values = getAllTranslationsOf("blocks.user");
+    expect(values.length).toBeGreaterThanOrEqual(5);
   });
 });
