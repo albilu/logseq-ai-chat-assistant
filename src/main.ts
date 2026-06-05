@@ -24,7 +24,12 @@ type RuntimeWithShowMsg = typeof logseq & {
 export async function main(runtime: typeof logseq = logseq) {
   const appRuntime = runtime as RuntimeWithShowMsg;
 
-  await initLocale(appRuntime);
+  // Do NOT await initLocale here — getUserConfigs() is an IPC call that
+  // deadlocks the Logseq handshake because the host won't process IPC
+  // until the ready callback returns.  Locale defaults to English; the
+  // background init below will activate the correct locale for all
+  // runtime messages (commands, warnings, etc.) and refresh the schema
+  // with localized labels.
 
   const settings = parseSettings(appRuntime.settings ?? {});
 
@@ -177,8 +182,21 @@ export async function main(runtime: typeof logseq = logseq) {
 
   await registerCommands(appRuntime, settings);
 
-  // Sync models in background - don't block the Logseq handshake.
-  // Provider reachability is checked here instead of a separate probe step.
+  // Background work — none of this blocks the Logseq handshake.
+
+  // 1. Activate the user's locale and refresh settings labels.
+  //    Must happen after the handshake so getUserConfigs() IPC succeeds.
+  initLocale(appRuntime)
+    .then(() => {
+      console.info("[logseq-ai-chat-assistant] locale initialized, refreshing schema");
+      appRuntime.useSettingsSchema(getSettingsSchema(settings.models));
+    })
+    .catch(error => {
+      console.warn("[logseq-ai-chat-assistant] locale init failed, keeping English defaults", error);
+    });
+
+  // 2. Sync models from configured providers.
+  //    Provider reachability is checked here instead of a separate probe step.
   console.debug("[logseq-ai-chat-assistant] starting background model sync");
   syncModels(appRuntime)
     .then(syncedModels => {
