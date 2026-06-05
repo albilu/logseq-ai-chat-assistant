@@ -104,12 +104,29 @@ export async function main(runtime: typeof logseq = logseq) {
 
     const newModelsJson = JSON.stringify(newModels);
     const currentModelsJson = JSON.stringify(currentSettings.models);
-    if (newModelsJson !== currentModelsJson) {
-      console.info("[logseq-ai-chat-assistant] syncModels: writing updated model list", {
-        before: currentSettings.models.map(m => m.name),
-        after: newModels.map(m => m.name)
-      });
-      runtime.updateSettings({ models: JSON.stringify(newModels, null, 2) });
+    const modelNames = new Set(newModels.map(m => m.name));
+    const needsDefaultModel = newModels.length > 0 && !modelNames.has(currentSettings.defaultModel);
+
+    if (newModelsJson !== currentModelsJson || needsDefaultModel) {
+      const settingsUpdate: Record<string, string> = {};
+
+      if (newModelsJson !== currentModelsJson) {
+        console.info("[logseq-ai-chat-assistant] syncModels: writing updated model list", {
+          before: currentSettings.models.map(m => m.name),
+          after: newModels.map(m => m.name)
+        });
+        settingsUpdate.models = JSON.stringify(newModels, null, 2);
+      }
+
+      if (needsDefaultModel) {
+        console.info("[logseq-ai-chat-assistant] syncModels: auto-selecting default model", {
+          previous: currentSettings.defaultModel,
+          selected: newModels[0].name
+        });
+        settingsUpdate.defaultModel = newModels[0].name;
+      }
+
+      runtime.updateSettings(settingsUpdate);
     } else {
       console.debug("[logseq-ai-chat-assistant] syncModels: model list unchanged, skipping updateSettings");
     }

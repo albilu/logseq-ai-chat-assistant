@@ -1041,6 +1041,100 @@ describe("plugin bootstrap", () => {
     expect(runChatFlow).not.toHaveBeenCalled();
   });
 
+  it("auto-selects defaultModel when it is empty and models are available after sync", async () => {
+    vi.resetModules();
+    vi.doMock("../../src/core/provider-registry", async () => {
+      const actual = await vi.importActual<typeof import("../../src/core/provider-registry")>("../../src/core/provider-registry");
+      return {
+        ...actual,
+        fetchProviderModels: vi.fn().mockResolvedValue(["qwen2.5:0.5b"])
+      };
+    });
+
+    const runtime = createMockLogseqRuntime({
+      settings: {
+        providers: '[{"name":"local-ollama","type":"ollama","baseUrl":"http://127.0.0.1:11434"}]',
+        models: "[]",
+        defaultModel: "",
+        shortcutBinding: "ctrl+shift+enter"
+      }
+    });
+
+    const { main } = await import("../../src/main");
+    await main(runtime as any);
+
+    // Wait for background model sync to auto-select defaultModel
+    await vi.waitFor(() => {
+      expect(runtime.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ defaultModel: "local-ollama qwen2.5:0.5b" })
+      );
+    });
+  });
+
+  it("auto-selects defaultModel to first model when multiple models are fetched", async () => {
+    vi.resetModules();
+    vi.doMock("../../src/core/provider-registry", async () => {
+      const actual = await vi.importActual<typeof import("../../src/core/provider-registry")>("../../src/core/provider-registry");
+      return {
+        ...actual,
+        fetchProviderModels: vi.fn().mockResolvedValue(["qwen2.5:0.5b", "llama3:latest"])
+      };
+    });
+
+    const runtime = createMockLogseqRuntime({
+      settings: {
+        providers: '[{"name":"local-ollama","type":"ollama","baseUrl":"http://127.0.0.1:11434"}]',
+        models: "[]",
+        defaultModel: "",
+        shortcutBinding: "ctrl+shift+enter"
+      }
+    });
+
+    const { main } = await import("../../src/main");
+    await main(runtime as any);
+
+    await vi.waitFor(() => {
+      expect(runtime.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ defaultModel: "local-ollama qwen2.5:0.5b" })
+      );
+    });
+  });
+
+  it("does not overwrite defaultModel when it already points to a valid model", async () => {
+    vi.resetModules();
+    vi.doMock("../../src/core/provider-registry", async () => {
+      const actual = await vi.importActual<typeof import("../../src/core/provider-registry")>("../../src/core/provider-registry");
+      return {
+        ...actual,
+        fetchProviderModels: vi.fn().mockResolvedValue(["qwen2.5:0.5b", "llama3:latest"])
+      };
+    });
+
+    const runtime = createMockLogseqRuntime({
+      settings: {
+        providers: '[{"name":"local-ollama","type":"ollama","baseUrl":"http://127.0.0.1:11434"}]',
+        models: '[{"name":"local-ollama llama3:latest","providerId":"local-ollama","modelId":"llama3:latest","systemPrompt":"help"}]',
+        defaultModel: "local-ollama llama3:latest",
+        shortcutBinding: "ctrl+shift+enter"
+      }
+    });
+
+    const { main } = await import("../../src/main");
+    await main(runtime as any);
+
+    // Wait for background sync to complete
+    await vi.waitFor(() => {
+      expect(runtime.updateSettings).toHaveBeenCalled();
+    });
+
+    // defaultModel should NOT have been changed - it was already valid
+    for (const call of runtime.updateSettings.mock.calls) {
+      if (call[0].defaultModel !== undefined) {
+        expect(call[0].defaultModel).toBe("local-ollama llama3:latest");
+      }
+    }
+  });
+
   it("warns when a configured provider is unreachable on startup", async () => {
     vi.resetModules();
     vi.doMock("../../src/core/provider-registry", async () => {
