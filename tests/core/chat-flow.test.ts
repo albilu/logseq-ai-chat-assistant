@@ -11,8 +11,8 @@ vi.mock("../../src/ui/streaming-indicator", async () => {
 import type { RunChatFlowInput } from "../../src/core/chat-flow";
 import { buildMessages, runChatFlow } from "../../src/core/chat-flow";
 import {
-  STREAMING_MARKER_FRAMES,
-  STREAMING_MARKER_TEXT,
+  getStreamingMarkerFrames,
+  getStreamingMarkerText,
   shouldReduceStreamingMotion
 } from "../../src/ui/streaming-indicator";
 
@@ -158,7 +158,7 @@ describe("runChatFlow", () => {
     expect(mockLogseqService.replaceBlockContent).toHaveBeenNthCalledWith(
       1,
       "assistant-id",
-      STREAMING_MARKER_FRAMES[0],
+      getStreamingMarkerFrames()[0],
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).toHaveBeenNthCalledWith(2, "assistant-id", "Hello", "assistant");
@@ -253,7 +253,7 @@ describe("runChatFlow", () => {
 
     expect(mockLogseqService.replaceBlockContent).toHaveBeenCalledWith(
       "assistant-id",
-      STREAMING_MARKER_FRAMES[0],
+      getStreamingMarkerFrames()[0],
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).toHaveBeenCalledTimes(1);
@@ -284,17 +284,17 @@ describe("runChatFlow", () => {
 
     expect(mockLogseqService.replaceBlockContent).toHaveBeenCalledWith(
       "assistant-id",
-      STREAMING_MARKER_TEXT,
+      getStreamingMarkerText(),
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).not.toHaveBeenCalledWith(
       "assistant-id",
-      STREAMING_MARKER_FRAMES[1],
+      getStreamingMarkerFrames()[1],
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).not.toHaveBeenCalledWith(
       "assistant-id",
-      STREAMING_MARKER_FRAMES[2],
+      getStreamingMarkerFrames()[2],
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).toHaveBeenCalledTimes(1);
@@ -323,7 +323,7 @@ describe("runChatFlow", () => {
     expect(mockLogseqService.replaceBlockContent).toHaveBeenNthCalledWith(
       1,
       "assistant-id",
-      STREAMING_MARKER_FRAMES[0],
+      getStreamingMarkerFrames()[0],
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).toHaveBeenNthCalledWith(2, "assistant-id", "Hello", "assistant");
@@ -352,7 +352,7 @@ describe("runChatFlow", () => {
     expect(mockLogseqService.replaceBlockContent).toHaveBeenNthCalledWith(
       1,
       "assistant-id",
-      STREAMING_MARKER_FRAMES[0],
+      getStreamingMarkerFrames()[0],
       "assistant"
     );
     expect(mockLogseqService.replaceBlockContent).toHaveBeenNthCalledWith(2, "assistant-id", "Partial", "assistant");

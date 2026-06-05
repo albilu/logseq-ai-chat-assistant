@@ -2,10 +2,11 @@ import type { ContextMode, ModelConfig } from "./types";
 import type { ChatMessage, LLMProvider } from "../providers/llm/interface";
 import type { ResolvedPage } from "../services/logseq-service";
 import {
-  STREAMING_MARKER_FRAMES,
-  STREAMING_MARKER_TEXT,
+  getStreamingMarkerFrames,
+  getStreamingMarkerText,
   shouldReduceStreamingMotion
 } from "../ui/streaming-indicator";
+import { t } from "../i18n/index";
 
 type PriorTurn = {
   user: string;
@@ -47,7 +48,7 @@ function startStreamingIndicatorLoop(
   if (shouldReduceStreamingMotion()) {
     const pendingWrite = (async () => {
       try {
-        await logseqService.replaceBlockContent(blockUuid, STREAMING_MARKER_TEXT, "assistant");
+        await logseqService.replaceBlockContent(blockUuid, getStreamingMarkerText(), "assistant");
       } catch {
         // ignore indicator failures and allow chat flow to continue
       }
@@ -58,7 +59,7 @@ function startStreamingIndicatorLoop(
     };
   }
 
-  const frames = STREAMING_MARKER_FRAMES;
+  const frames = getStreamingMarkerFrames();
 
   let cancelled = false;
   let frameIndex = 0;
@@ -172,7 +173,7 @@ export async function runChatFlow(input: RunChatFlowInput) {
     await input.logseqService.appendErrorBlock(
       parentUuid,
       getErrorMessage(error),
-      "Retry Ask AI after fixing the provider connection."
+      t("ui.retryAfterFix")
     );
   }
 }
@@ -188,7 +189,7 @@ export function buildMessages(
       { role: "system", content: systemPrompt },
       {
         role: "user",
-        content: `Summarize the following Logseq block content:\n\n${promptSourceText}`
+        content: t("prompts.summarizeBlock", { content: promptSourceText })
       }
     ];
   }
@@ -200,7 +201,7 @@ export function buildMessages(
   if (context.contextMode === "full-page" && fullPageContext) {
     messages.push({
       role: "user",
-      content: `Use this page context as reference when answering.\n\n${fullPageContext}`
+      content: t("prompts.pageContext", { context: fullPageContext })
     });
   }
 
