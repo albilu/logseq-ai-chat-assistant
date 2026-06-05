@@ -42,7 +42,8 @@ function createMockLogseqRuntime(options: MockLogseqRuntimeOptions = {}) {
     },
     App: {
       showMsg: vi.fn(),
-      registerCommandShortcut: vi.fn()
+      registerCommandShortcut: vi.fn(),
+      getUserConfigs: vi.fn().mockResolvedValue({ preferredLanguage: "en" })
     }
   };
 }
@@ -92,7 +93,7 @@ describe("plugin bootstrap", () => {
       ready,
       useSettingsSchema,
       settings: {},
-      App: { showMsg: vi.fn(), registerCommandShortcut: vi.fn() },
+      App: { showMsg: vi.fn(), registerCommandShortcut: vi.fn(), getUserConfigs: vi.fn().mockResolvedValue({ preferredLanguage: "en" }) },
       Editor: {
         registerSlashCommand: vi.fn(),
         registerBlockContextMenuItem: vi.fn(),
@@ -102,7 +103,7 @@ describe("plugin bootstrap", () => {
         updateBlock: vi.fn()
       }
     });
-
+    
     await import("../../src/main");
 
     expect(useSettingsSchema).toHaveBeenCalled();

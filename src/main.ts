@@ -4,6 +4,7 @@ import { registerCommands } from "./core/commands";
 import { fetchProviderModels, probeProvider } from "./core/provider-registry";
 import { parseSettings, getSettingsSchema, validateSettings } from "./core/settings";
 import type { ModelConfig } from "./core/types";
+import { initLocale, t } from "./i18n/index";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -16,11 +17,14 @@ function getErrorMessage(error: unknown) {
 type RuntimeWithShowMsg = typeof logseq & {
   App: {
     showMsg(message: string, level: "success" | "warning" | "error"): void;
+    getUserConfigs?(): Promise<{ preferredLanguage: string }>;
   };
 };
 
 export async function main(runtime: typeof logseq = logseq) {
   const appRuntime = runtime as RuntimeWithShowMsg;
+
+  await initLocale(appRuntime);
 
   const settings = parseSettings(appRuntime.settings ?? {});
 
@@ -35,7 +39,7 @@ export async function main(runtime: typeof logseq = logseq) {
     try {
       await probeProvider(provider);
     } catch (error) {
-      appRuntime.App.showMsg(`Provider "${provider.name}" is unreachable: ${getErrorMessage(error)}`, "warning");
+      appRuntime.App.showMsg(t("ui.providerUnreachable", { name: provider.name, error: getErrorMessage(error) }), "warning");
     }
   }
 
@@ -78,7 +82,7 @@ export async function main(runtime: typeof logseq = logseq) {
               name: `${provider.name} ${modelId}`,
               providerId: provider.name,
               modelId: modelId,
-              systemPrompt: "You are a helpful AI assistant."
+              systemPrompt: t("prompts.defaultSystemPrompt")
             });
           }
         }
